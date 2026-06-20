@@ -1,0 +1,25 @@
+{
+  "//": [
+    "OIDC trust policy for the sre-agent IAM role (IRSA — IAM Roles for Service Accounts).",
+    "Replace ACCOUNT_ID, REGION, and CLUSTER_OIDC_ID with your EKS cluster's values.",
+    "Find CLUSTER_OIDC_ID with: aws eks describe-cluster --name <cluster> --query 'cluster.identity.oidc.issuer'",
+    "The condition pins the role to the exact ServiceAccount in the sre-agent namespace —",
+    "no other pod or namespace can assume it even if the OIDC provider is shared."
+  ],
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::ACCOUNT_ID:oidc-provider/oidc.eks.REGION.amazonaws.com/id/CLUSTER_OIDC_ID"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "oidc.eks.REGION.amazonaws.com/id/CLUSTER_OIDC_ID:sub": "system:serviceaccount:sre-agent:sre-agent",
+          "oidc.eks.REGION.amazonaws.com/id/CLUSTER_OIDC_ID:aud": "sts.amazonaws.com"
+        }
+      }
+    }
+  ]
+}

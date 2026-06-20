@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# Secrets & local config
+.env
+*.pem
+*.key
+
+# Agent runtime artifacts
+audit/
+*.audit.jsonl
+transcripts/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

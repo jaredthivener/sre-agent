@@ -1,0 +1,42 @@
+{
+  "event": {
+    "id": "01DABCDEFGHIJKLMNOPQRSTUV",
+    "event_type": "incident.triggered",
+    "resource_type": "incident",
+    "occurred_at": "2026-06-20T14:31:00.000Z",
+    "agent": {
+      "id": "PXXXXXX",
+      "type": "service_reference"
+    },
+    "data": {
+      "id": "PINCIDENT123",
+      "type": "incident",
+      "self": "https://api.pagerduty.com/incidents/PINCIDENT123",
+      "html_url": "https://acme.pagerduty.com/incidents/PINCIDENT123",
+      "number": 4242,
+      "incident_number": 4242,
+      "status": "triggered",
+      "title": "[FIRING] checkout-api 5xx error rate above 5% (p1)",
+      "urgency": "high",
+      "created_at": "2026-06-20T14:30:00.000Z",
+      "service": {
+        "id": "PSERVICE9",
+        "summary": "checkout-api",
+        "name": "checkout-api",
+        "type": "service_reference",
+        "html_url": "https://acme.pagerduty.com/services/PSERVICE9"
+      },
+      "priority": {
+        "id": "PPRIORITY1",
+        "summary": "P1",
+        "type": "priority_reference"
+      },
+      "assignees": [],
+      "escalation_policy": {
+        "id": "PESCPOL1",
+        "summary": "Checkout On-Call",
+        "type": "escalation_policy_reference"
+      }
+    }
+  }
+}

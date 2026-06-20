@@ -1,0 +1,77 @@
+{
+  "//": [
+    "Permissions policy for the sre-agent IAM role.",
+    "Attach this to the role whose ARN is annotated on the k8s ServiceAccount (IRSA).",
+    "Two Sid blocks: (1) Secrets Manager read for all sre-agent/* secrets,",
+    "                (2) read-only AWS investigation — CloudWatch, ECS, Lambda, RDS, etc.",
+    "Replace ACCOUNT_ID and REGION with your values, or use '*' for multi-region/account setups.",
+    "",
+    "To create the role:",
+    "  aws iam create-role --role-name sre-agent-role \\",
+    "      --assume-role-policy-document file://iam-role-trust-policy.json",
+    "  aws iam put-role-policy --role-name sre-agent-role \\",
+    "      --policy-name sre-agent-permissions \\",
+    "      --policy-document file://iam-permissions-policy.json"
+  ],
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "SecretsManagerReadOnly",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret",
+        "secretsmanager:ListSecretVersionIds"
+      ],
+      "Resource": "arn:aws:secretsmanager:*:ACCOUNT_ID:secret:sre-agent/*"
+    },
+    {
+      "Sid": "AWSReadOnlyInvestigation",
+      "Effect": "Allow",
+      "Action": [
+        "cloudwatch:Describe*",
+        "cloudwatch:Get*",
+        "cloudwatch:List*",
+        "logs:Describe*",
+        "logs:Get*",
+        "logs:List*",
+        "logs:FilterLogEvents",
+        "logs:StartQuery",
+        "logs:StopQuery",
+        "logs:GetQueryResults",
+        "cloudtrail:LookupEvents",
+        "cloudtrail:GetTrail",
+        "cloudtrail:GetTrailStatus",
+        "cloudtrail:DescribeTrails",
+        "cloudtrail:ListTrails",
+        "ecs:Describe*",
+        "ecs:List*",
+        "lambda:Get*",
+        "lambda:List*",
+        "apigateway:GET",
+        "elasticloadbalancing:Describe*",
+        "rds:Describe*",
+        "rds:List*",
+        "dynamodb:Describe*",
+        "dynamodb:List*",
+        "sqs:Get*",
+        "sqs:List*",
+        "sns:Get*",
+        "sns:List*",
+        "kinesis:Describe*",
+        "kinesis:List*",
+        "kinesis:Get*",
+        "ec2:Describe*",
+        "autoscaling:Describe*",
+        "application-autoscaling:Describe*",
+        "ssm:GetParameter",
+        "ssm:GetParameters",
+        "ssm:DescribeParameters",
+        "health:DescribeAffectedEntities",
+        "health:DescribeEventDetails",
+        "health:DescribeEvents"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

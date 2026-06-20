@@ -1,0 +1,115 @@
+# Deploys the SRE agent under a READ-ONLY ServiceAccount.
+# Auth model: OIDC/IRSA — the pod assumes an IAM role via the EKS OIDC provider.
+# No static credentials are mounted. Secrets are fetched from AWS Secrets Manager at startup
+# using the temporary credentials injected by IRSA.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sre-agent
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sre-agent
+  namespace: sre-agent
+  annotations:
+    # IRSA: replace with your IAM role ARN (created from deploy/iam-role-trust-policy.json).
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/sre-agent-role
+    # Optional — reduce credential refresh latency:
+    eks.amazonaws.com/token-expiration: "86400"
+---
+# Cluster-wide READ-ONLY access for k8s investigation. get/list/watch only — no write verbs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: sre-agent-readonly
+rules:
+  - apiGroups: ["", "apps", "batch", "networking.k8s.io", "events.k8s.io", "metrics.k8s.io"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: sre-agent-readonly
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: sre-agent-readonly
+subjects:
+  - kind: ServiceAccount
+    name: sre-agent
+    namespace: sre-agent
+---
+# Non-sensitive config (URLs, region, feature flags). Secrets come from Secrets Manager, not here.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sre-agent-config
+  namespace: sre-agent
+data:
+  GRAFANA_URL: "https://your-org.grafana.net"
+  PAGERDUTY_USER_EMAIL: "sre-agent@example.com"
+  AWS_REGION: "us-east-1"
+  SLACK_INCIDENT_CHANNEL: "#incidents"
+  ORCHESTRATOR_MODEL: "claude-opus-4-8"
+  SUBAGENT_MODEL: "claude-sonnet-4-6"
+  DRY_RUN: "1"   # flip to "0" only after staged test shows zero mutating calls
+  # Secrets Manager: all tokens are loaded from sre-agent/* at startup via OIDC/IRSA.
+  SECRETS_MANAGER_PREFIX: "sre-agent"
+  AWS_SECRETS_REGION: "us-east-1"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sre-agent
+  namespace: sre-agent
+  labels: { app: sre-agent }
+spec:
+  replicas: 1  # single replica keeps SQLite dedupe correct; use DynamoDB/Redis for >1.
+  selector:
+    matchLabels: { app: sre-agent }
+  template:
+    metadata:
+      labels: { app: sre-agent }
+    spec:
+      serviceAccountName: sre-agent
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+      containers:
+        - name: sre-agent
+          image: your-registry/sre-agent:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: sre-agent-config
+          # IRSA injects AWS_ROLE_ARN + AWS_WEB_IDENTITY_TOKEN_FILE automatically.
+          # boto3 / AWS CLI pick them up via the default credential chain — no AWS_ secret needed.
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          resources:
+            requests: { cpu: "250m", memory: "512Mi" }
+            limits: { cpu: "1", memory: "1Gi" }
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+            initialDelaySeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+            initialDelaySeconds: 10
+      volumes: []
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sre-agent
+  namespace: sre-agent
+spec:
+  selector: { app: sre-agent }
+  ports:
+    - port: 80
+      targetPort: 8080
