@@ -3,6 +3,7 @@
   "permissions": {
     "defaultMode": "default",
     "allow": [
+      "Write",
       "Read",
       "Glob",
       "Grep",
