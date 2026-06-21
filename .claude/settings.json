@@ -1,7 +1,7 @@
 {
-  "$comment": "Read-only permission model for the SRE agent. defaultMode 'deny' means anything not explicitly allowed is blocked. This is layer 1 of defense; .claude/hooks/block_mutations.py is layer 2; read-only credentials are layer 3.",
+  "$comment": "Read-only permission model for the SRE agent. Layer 1: permissions.allow/deny lists below. Layer 2: block_mutations.py PreToolUse hook. Layer 3: read-only credentials. defaultMode 'default' applies standard judgment for anything not covered by the lists; the deny list + hook are the real enforcement.",
   "permissions": {
-    "defaultMode": "deny",
+    "defaultMode": "default",
     "allow": [
       "Read",
       "Glob",
@@ -100,7 +100,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash|mcp__.*",
+        "matcher": "Bash|Write|Edit|MultiEdit|NotebookEdit|mcp__.*",
         "hooks": [
           {
             "type": "command",

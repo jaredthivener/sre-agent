@@ -76,6 +76,21 @@ def test_readonly_mcp_is_allowed(tool):
     assert not _denied(tool, {})
 
 
+@pytest.mark.parametrize("tool_name, tool_input", [
+    ("Write", {"file_path": "/tmp/example.txt", "content": "hello"}),
+    ("Edit", {"file_path": "/tmp/example.txt", "old_string": "old", "new_string": "new"}),
+    ("MultiEdit", {"file_path": "/tmp/example.txt", "edits": [{"old_string": "old", "new_string": "new"}]}),
+    ("NotebookEdit", {"file_path": "/tmp/notebook.ipynb", "old_string": "old", "new_string": "new"}),
+])
+def test_mutating_builtin_tools_are_denied(tool_name, tool_input):
+    assert _denied(tool_name, tool_input), f"should have blocked: {tool_name}"
+
+
+@pytest.mark.parametrize("tool_name", ["Read", "Glob", "Grep"])
+def test_readonly_builtin_tools_are_allowed(tool_name):
+    assert not _denied(tool_name, {}), f"should have allowed: {tool_name}"
+
+
 def test_sanctioned_outbound_writes_allowed():
     """The agent's only permitted writes: posting findings to PagerDuty notes + Slack."""
     assert not _denied("mcp__pagerduty__add_note_to_incident", {})

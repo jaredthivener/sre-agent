@@ -48,6 +48,14 @@ _MUTATING_MCP_SUBSTRINGS: tuple[str, ...] = (
     "scale", "restart", "rollout", "apply", "terminate", "reboot",
 )
 
+# Built-in tools that mutate the workspace directly.
+_MUTATING_BUILTIN_TOOLS: tuple[str, ...] = (
+    "Write",
+    "Edit",
+    "MultiEdit",
+    "NotebookEdit",
+)
+
 # MCP write tools we DO allow — the agent's only sanctioned outbound writes (posting findings).
 _ALLOWED_MCP_WRITES: tuple[str, ...] = (
     "mcp__pagerduty__add_note_to_incident",
@@ -74,6 +82,11 @@ def decide(tool_name: str, tool_input: dict) -> dict:
                 return _deny(f"Blocked mutating shell command (matched /{pattern.pattern}/). "
                              f"The SRE agent is read-only; recommend this action in the RCA instead.")
         return _ok()
+
+    # Built-in file tools: deny workspace mutations even though they are not shell commands.
+    if name in _MUTATING_BUILTIN_TOOLS:
+        return _deny(f"Blocked mutating built-in tool '{name}'. The SRE agent is read-only; "
+                     f"recommend this action in the RCA instead.")
 
     # MCP tools: explicitly allow the sanctioned writes, deny anything else mutating.
     if name.startswith("mcp__"):
