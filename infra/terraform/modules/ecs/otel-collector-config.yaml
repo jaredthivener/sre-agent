@@ -1,0 +1,57 @@
+# AWS OpenTelemetry Collector config for the SRE agent sidecar.
+# Receives OTEL signals from the agent container on localhost, exports to:
+#   - CloudWatch EMF (infra metrics: CPU, memory, investigation duration, token counts)
+#   - AWS X-Ray (distributed traces for each investigation)
+# Langfuse traces are sent directly from the Python SDK (OTLP/HTTP), not via this sidecar.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 10s
+    send_batch_size: 1024
+
+  # Drop noisy spans below 100ms that aren't errors
+  filter/drop_fast_ok:
+    spans:
+      exclude:
+        match_type: and
+        attributes:
+          - key: http.status_code
+            value: 200
+            action: exclude
+
+exporters:
+  awsemf:
+    region: ${AWS_REGION}
+    namespace: SREAgent
+    log_group_name: /sre-agent/metrics
+    dimension_rollup_option: NoDimensionRollup
+    metric_declarations:
+      - dimensions: [[service.name], [service.name, investigation.service]]
+        metric_name_selectors:
+          - investigation_duration_seconds
+          - investigation_tokens_total
+          - investigation_cost_usd
+          - subagent_calls_total
+
+  awsxray:
+    region: ${AWS_REGION}
+    index_all_attributes: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [awsxray]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [awsemf]

@@ -1,0 +1,12 @@
+variable "app_name" { type = string }
+variable "aws_region" { type = string }
+variable "langfuse_image" { type = string }
+variable "db_instance_class" { type = string }
+variable "redis_node_type" { type = string }
+variable "private_subnet_ids" { type = list(string) }
+variable "langfuse_sg_id" { type = string }
+variable "db_sg_id" { type = string }
+variable "execution_role_arn" { type = string }
+variable "task_role_arn" { type = string }
+variable "log_group_name" { type = string }
+variable "log_retention_days" { type = number }

@@ -1,0 +1,13 @@
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.git
+.env
+.env.*
+*.egg-info
+.pytest_cache
+.ruff_cache
+.mypy_cache
+infra/build_and_scan.py
+infra/scan.py

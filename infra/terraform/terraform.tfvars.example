@@ -1,0 +1,38 @@
+# Copy to terraform.tfvars and fill in your values. Never commit terraform.tfvars.
+
+aws_region  = "us-east-1"
+environment = "production"
+app_name    = "sre-agent"
+
+# Your ECR image — build with: docker build -t sre-agent . && docker push <ecr-uri>
+agent_image = "123456789012.dkr.ecr.us-east-1.amazonaws.com/sre-agent:latest"
+
+# Fargate sizing — 1024 CPU / 2048 MiB handles ~3 concurrent investigations comfortably
+agent_cpu    = 1024
+agent_memory = 2048
+
+# Models
+orchestrator_model = "claude-opus-4-8"
+subagent_model     = "claude-sonnet-4-6"
+scribe_model       = "claude-haiku-4-5"
+
+# Set to true for initial deployment validation — flip to false when confident
+dry_run = true
+
+# External endpoints (non-sensitive)
+grafana_url            = "https://your-org.grafana.net"
+pagerduty_user_email   = "sre-agent@your-org.com"
+slack_incident_channel = "#incidents"
+
+# Observability
+cloudtrail_s3_bucket_name = "your-org-sre-agent-cloudtrail-logs"
+log_retention_days        = 90
+alarm_sns_topic_arn       = "arn:aws:sns:us-east-1:123456789012:sre-agent-alerts"
+
+# Secrets — populate via AWS CLI after apply:
+#   aws secretsmanager put-secret-value --secret-id sre-agent/anthropic-api-key --secret-string "sk-ant-..."
+#   aws secretsmanager put-secret-value --secret-id sre-agent/pagerduty-api-token --secret-string "..."
+#   aws secretsmanager put-secret-value --secret-id sre-agent/pagerduty-webhook-secret --secret-string "..."
+#   aws secretsmanager put-secret-value --secret-id sre-agent/grafana-service-account-token --secret-string "..."
+#   aws secretsmanager put-secret-value --secret-id sre-agent/github-token --secret-string "..."
+#   aws secretsmanager put-secret-value --secret-id sre-agent/slack-bot-token --secret-string "..."
